@@ -1,0 +1,11 @@
+# downloaded at runtime from https://embeddings.neospace.ai/
+artifacts/
+
+# internal handoff notes — not for the public repo
+HANDOFF.md
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/

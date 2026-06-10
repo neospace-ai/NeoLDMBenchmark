@@ -1,0 +1,24 @@
+{
+  "label": "cortex_score",
+  "protocol": "balanced-train + FULL-true-test",
+  "seeds": 4,
+  "test": {
+    "rows": 2412326,
+    "fraud": 2698,
+    "rate": 0.0011184226344200577
+  },
+  "arms": {
+    "raw_13d": {
+      "auprc_mean": 0.19204716036164107,
+      "auprc_std": 0.05000771716564673,
+      "f1_mean": 0.3090605193954416,
+      "f1_std": 0.04506146997901786
+    },
+    "cortex_score": {
+      "auprc_mean": 0.988520247682862,
+      "auprc_std": 0.0,
+      "f1_mean": 0.959279414524301,
+      "f1_std": 0.0
+    }
+  }
+}
