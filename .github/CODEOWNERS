@@ -1,0 +1,10 @@
+# Code owners for NeoLDMBenchmark.
+#
+# Listed owners are auto-requested for review on every PR, and their approval is
+# REQUIRED to merge (enforced by the repo ruleset "Require code owner review").
+# Owners = the NeoSpace security team + the NeoLDM contributors.
+#
+# NOTE: an individual/team only counts as a valid code owner if they have write
+# access to THIS repository.
+
+*  @neospace-ai/security @Tautorn @carloshgf @luizcoroo
