@@ -163,20 +163,21 @@ nb_score = nb([
 
     md("## 5 · How Cortex compares",
        "AUPRC and best-threshold F1 across the models measured on this dataset. Cortex and the raw "
-       "baseline are computed here; PRAGMA-M (100M, LoRA fine-tune) and NVIDIA's TFM (29M) are "
-       "reference points from their best reproduced configurations."),
+       "baseline are computed here; NVIDIA's TFM (29M) and Revolut's PRAGMA-M (100M) are reference "
+       "points from their reproduced configurations. PRAGMA-M is shown by both readouts — its "
+       "frozen embedding+raw → XGBoost result and the stronger LoRA fine-tune."),
     code("import numpy as np",
          "",
-         "labels = ['Cortex\\n(~8M)', 'Raw 13-col', 'PRAGMA-M\\n(100M)', 'NVIDIA TFM\\n(29M)']",
-         "auprcs = [au, rb, 0.83, 0.18]               # Cortex (rounded up to 2dp, as in the headline) & raw",
-         "f1s    = [f1, rf, 0.81, 0.23]               # PRAGMA-M / NVIDIA: reference values",
-         "colors = ['#6633ff', '#9aa0a6', '#34a853', '#ea4335']",
+         "labels = ['Cortex\\n(~8M)', 'Raw 13-col', 'PRAGMA-M XGB\\n(100M)', 'PRAGMA-M LoRA\\n(100M)', 'NVIDIA TFM\\n(29M)']",
+         "auprcs = [au, rb, 0.47, 0.83, 0.18]         # Cortex (rounded up to 2dp, as in the headline) & raw computed above",
+         "f1s    = [f1, rf, 0.60, 0.81, 0.23]         # PRAGMA-M (XGB / LoRA) & NVIDIA: reference values",
+         "colors = ['#6633ff', '#9aa0a6', '#9ccc9c', '#34a853', '#ea4335']",
          "",
          "x = np.arange(len(labels)); w = 0.38",
-         "fig, ax = plt.subplots(figsize=(7, 4))",
+         "fig, ax = plt.subplots(figsize=(8.5, 4))",
          "b1 = ax.bar(x - w/2, auprcs, w, label='AUPRC', color=colors)",
          "b2 = ax.bar(x + w/2, f1s, w, label='F1', color=colors, alpha=0.5)",
-         "ax.set_xticks(x); ax.set_xticklabels(labels)",
+         "ax.set_xticks(x); ax.set_xticklabels(labels, fontsize=8)",
          "ax.set_ylim(0, 1.08); ax.set_ylabel('score')",
          "ax.set_title('Cortex vs other models on IBM TabFormer')",
          "for b in list(b1) + list(b2):",
