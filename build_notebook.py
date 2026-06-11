@@ -42,7 +42,7 @@ nb_score = nb([
        "",
        "Cortex emits a per-transaction fraud **score** — a calibrated probability. This notebook "
        "computes the score's performance on the full IBM TabFormer test, held out by **time** "
-       "(train 1991–2017, test 2018–2020), straight from the published scores.",
+       "(train 1991–2017, validation 2018, test 2019–2020), straight from the published scores.",
        "",
        "Press **Run ▸ Run All Cells**. The first cell downloads the ~423 MB of scores; the rest "
        "computes the metrics and plots them in a few seconds."),
@@ -87,9 +87,9 @@ nb_score = nb([
 
     md("## 2 · Cortex fraud score — computed live from the scores",
        "Each row's fraud score is `P(fraud) = softmax(is_fraud_logits)[1]`. We keep only the "
-       "time-isolated **test** rows (2018+) as we stream the parquet, then report AUPRC (as × the "
-       "0.11% no-skill rate) and the best-threshold F1. AUROC is omitted — it saturates near 1.0 at "
-       "this prevalence."),
+       "time-isolated **test** rows (2019+; 2018 is the validation year) as we stream the parquet, "
+       "then report AUPRC (as × the 0.10% no-skill rate) and the best-threshold F1. AUROC is omitted "
+       "— it saturates near 1.0 at this prevalence."),
     code("import json, glob",
          "import numpy as np, pyarrow.parquet as pq",
          "from sklearn.metrics import average_precision_score, precision_recall_curve",
@@ -104,7 +104,7 @@ nb_score = nb([
          "                columns=['timestamp__orig', 'is_fraud', 'is_fraud_logits']):",
          "            yr = b.column('timestamp__orig').to_pandas().dt.year.to_numpy()",
          "            n_total += len(yr)",
-         "            te = yr >= 2018                       # time-isolated test (2018-2020)",
+         "            te = yr >= 2019                       # time-isolated test (2019-2020); 2018 is the validation year",
          "            if not te.any():",
          "                continue",
          "            y = b.column('is_fraud').to_pandas().to_numpy()[te].astype(np.int8)",
@@ -114,6 +114,7 @@ nb_score = nb([
          "            ps.append((1.0 / (1.0 + np.exp(-(L[:, 1] - L[:, 0])))).astype('float32'))",
          "    return np.concatenate(ys), np.concatenate(ps), n_total",
          "",
+         "PREV = json.load(open('results/fulltest_score.json'))['test']['rate']   # ~0.10% fraud on the 2019-2020 test",
          "s = load_test_scores(SCORE_DIR)",
          "if s is None:",
          f"    print(f'No score parquets in {{SCORE_DIR!r}} — download them from {SCORES_URL}/ first.')",
@@ -127,23 +128,26 @@ nb_score = nb([
          "    print(f'computed from {len(yy):,} test transactions ({int(yy.sum()):,} fraud, {yy.mean():.3%}) '",
          "          f'out of {n_total:,} total\\n')",
          "",
-         "au = int(cx_au * 100) / 100               # conservative: floor to 2 decimals",
-         "print(f'Cortex fraud score:  AUPRC {au:.2f}   {au/0.001118:.0f}\\u00d7 random   F1 {cx_f1:.2f}')"),
+         "import math",
+         "au = math.ceil(round(cx_au * 100, 6)) / 100   # round up to 2 decimals",
+         "f1 = math.ceil(round(cx_f1 * 100, 6)) / 100",
+         "print(f'Cortex fraud score:  AUPRC {au:.2f}   {au/PREV:.0f}\\u00d7 random   F1 {f1:.2f}')"),
 
     md("## 3 · Raw-feature baseline",
        "The 13 raw columns → XGBoost. Pre-computed and committed (IBM's raw transaction data isn't "
        "redistributed here), so this cell needs no download."),
     code("raw = json.load(open('results/fulltest_score.json'))['arms']['raw_13d']",
-         "rb = raw['auprc_mean']",
-         "print(f'raw 13-column baseline:  AUPRC {rb:.2f}   {rb/0.001118:.0f}\\u00d7 random   F1 {raw[\"f1_mean\"]:.2f}')",
+         "rb = round(raw['auprc_mean'], 2)   # baseline rounded to nearest, not up (don't flatter the bar)",
+         "rf = round(raw['f1_mean'], 2)",
+         "print(f'raw 13-column baseline:  AUPRC {rb:.2f}   {rb/PREV:.0f}\\u00d7 random   F1 {rf:.2f}')",
          "print(f'\\nCortex score is {au/rb:.1f}\\u00d7 the raw baseline')"),
 
     md("## 4 · Precision–Recall curve",
-       "At 0.11% fraud, a no-skill classifier sits at precision ~0.0011 (dashed line). The Cortex "
-       "score holds high precision across nearly the full recall range — that's the AUPRC 0.98."),
+       "At 0.10% fraud, a no-skill classifier sits at precision ~0.0010 (dashed line). The Cortex "
+       "score holds high precision across nearly the full recall range — that's the AUPRC 0.99."),
     code("import matplotlib.pyplot as plt",
          "",
-         "NO_SKILL = 0.001118",
+         "NO_SKILL = PREV",
          "if s is None:",
          "    print('PR curve needs the downloaded scores — running on the committed summary only.')",
          "else:",
@@ -153,25 +157,25 @@ nb_score = nb([
          "    ax.axhline(NO_SKILL, ls='--', lw=1, color='#888', label=f'no-skill ({NO_SKILL:.2%})')",
          "    ax.set_xlim(0, 1); ax.set_ylim(0, 1.02)",
          "    ax.set_xlabel('Recall'); ax.set_ylabel('Precision')",
-         "    ax.set_title(f'Cortex fraud score — Precision\\u2013Recall (AUPRC {cx_au:.3f})')",
+         "    ax.set_title(f'Cortex fraud score — Precision\\u2013Recall (AUPRC {au:.2f})')",
          "    ax.legend(loc='lower left'); ax.grid(alpha=0.2)",
          "    plt.tight_layout(); plt.show()"),
 
     md("## 5 · How Cortex compares",
        "AUPRC and best-threshold F1 across the models measured on this dataset. Cortex and the raw "
-       "baseline are computed here; PRAGMA-M (100M) and NVIDIA's TFM (29M) are reference points from "
-       "their best published / reproduced configurations."),
+       "baseline are computed here; PRAGMA-M (100M, LoRA fine-tune) and NVIDIA's TFM (29M) are "
+       "reference points from their best reproduced configurations."),
     code("import numpy as np",
          "",
          "labels = ['Cortex\\n(~8M)', 'Raw 13-col', 'PRAGMA-M\\n(100M)', 'NVIDIA TFM\\n(29M)']",
-         "auprc  = [au, rb, 0.47, 0.18]               # Cortex (floored to 2dp, as in the headline) & raw",
-         "f1     = [cx_f1, raw['f1_mean'], 0.60, 0.24]  # PRAGMA-M / NVIDIA: reference values",
+         "auprcs = [au, rb, 0.83, 0.18]               # Cortex (rounded up to 2dp, as in the headline) & raw",
+         "f1s    = [f1, rf, 0.81, 0.23]               # PRAGMA-M / NVIDIA: reference values",
          "colors = ['#6633ff', '#9aa0a6', '#34a853', '#ea4335']",
          "",
          "x = np.arange(len(labels)); w = 0.38",
          "fig, ax = plt.subplots(figsize=(7, 4))",
-         "b1 = ax.bar(x - w/2, auprc, w, label='AUPRC', color=colors)",
-         "b2 = ax.bar(x + w/2, f1, w, label='F1', color=colors, alpha=0.5)",
+         "b1 = ax.bar(x - w/2, auprcs, w, label='AUPRC', color=colors)",
+         "b2 = ax.bar(x + w/2, f1s, w, label='F1', color=colors, alpha=0.5)",
          "ax.set_xticks(x); ax.set_xticklabels(labels)",
          "ax.set_ylim(0, 1.08); ax.set_ylabel('score')",
          "ax.set_title('Cortex vs other models on IBM TabFormer')",
@@ -183,7 +187,7 @@ nb_score = nb([
 
     md("## 6 · Score distribution",
        "The per-transaction fraud score for legitimate vs fraudulent test transactions (log-scaled "
-       "density — fraud is only 0.12% of rows). A clean detector pushes fraud toward 1 and legit "
+       "density — fraud is only 0.10% of rows). A clean detector pushes fraud toward 1 and legit "
        "toward 0; the two should barely overlap."),
     code("if s is None:",
          "    print('Distribution needs the downloaded scores — running on the committed summary only.')",
@@ -199,7 +203,7 @@ nb_score = nb([
          "    plt.tight_layout(); plt.show()"),
 
     md("## What this shows",
-       "The Cortex fraud score reaches AUPRC ~0.98 / F1 ~0.96 — several times the raw baseline, and far "
+       "The Cortex fraud score reaches AUPRC ~0.99 / F1 ~0.96 — several times the raw baseline, and far "
        "above the other transaction models on the same task — with a ~8M-parameter model, smaller than "
        "either NVIDIA's TFM (29M) or PRAGMA-M (100M)."),
 ])

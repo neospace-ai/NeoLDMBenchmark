@@ -1,23 +1,24 @@
 {
   "label": "cortex_score",
-  "protocol": "balanced-train + FULL-true-test",
-  "seeds": 4,
+  "protocol": "balanced-train baseline + true-test, time-isolated test 2019-2020 (train 1991-2017, val 2018); raw_13d synced to the unified scoreboard (identical rows as NVIDIA)",
+  "test_span": "2019-2020",
+  "seeds": 1,
   "test": {
-    "rows": 2412326,
-    "fraud": 2698,
-    "rate": 0.0011184226344200577
+    "rows": 2034720,
+    "fraud": 2068,
+    "rate": 0.001016356058818904
   },
   "arms": {
     "raw_13d": {
-      "auprc_mean": 0.19204716036164107,
-      "auprc_std": 0.05000771716564673,
-      "f1_mean": 0.3090605193954416,
-      "f1_std": 0.04506146997901786
+      "auprc_mean": 0.1418,
+      "auprc_std": 0.0,
+      "f1_mean": 0.2568,
+      "f1_std": 0.0
     },
     "cortex_score": {
-      "auprc_mean": 0.988520247682862,
+      "auprc_mean": 0.9892701174428045,
       "auprc_std": 0.0,
-      "f1_mean": 0.959279414524301,
+      "f1_mean": 0.9594924353343094,
       "f1_std": 0.0
     }
   }

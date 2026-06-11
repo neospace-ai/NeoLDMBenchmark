@@ -6,13 +6,13 @@
 
 Financial transaction data is one of the richest signals in the enterprise. Every swipe, transfer, and payment encodes a pattern of behavior — daily spending habits, and the subtle shifts that precede fraud. Traditional fraud systems lean on hand-crafted features and rules: brittle, slow to adapt, and blind to the deep sequential structure of a transaction history. **Transaction foundation models** change the equation — pretrained on raw, unlabeled transaction sequences, they learn general representations of financial behavior that transfer to downstream tasks like fraud detection.
 
-**Cortex** is NeoSpace's transaction language model. It reads a raw stream of card transactions and emits a **per-transaction fraud score** — a calibrated probability — directly, with no downstream classifier. On the full IBM TabFormer test, held out by time (train 1991–2017, test 2018–2020), that score reaches **AUPRC 0.98 and F1 0.96** — far above the raw-feature baseline and the other transaction foundation models on the same task — from a **~8M-parameter** model, several times smaller than the models it beats.
+**Cortex** is NeoSpace's transaction language model. It reads a raw stream of card transactions and emits a **per-transaction fraud score** — a calibrated probability — directly, with no downstream classifier. On the full IBM TabFormer test, held out by time (train 1991–2017, validation 2018, test 2019–2020), that score reaches **AUPRC 0.99 and F1 0.96** — far above the raw-feature baseline and the other transaction foundation models on the same task — from a **~8M-parameter** model, several times smaller than the models it beats.
 
 This repository is a **runnable benchmark**: it downloads the published per-transaction Cortex scores and recomputes the time-isolated fraud metrics live, so the headline numbers can be verified rather than taken on trust. Launch it in your browser with the **Binder** badge above — no install, no login, no GPU.
 
 ![Cortex vs raw features](assets/headline_auprc_f1.png)
 
-> **How to read this:** fraud is ~0.11% of transactions, so a coin-flip classifier scores AUPRC ≈ 0.0011. The raw transaction columns reach ~170× that. Cortex's fraud score reaches **~875× random**. We report **AUPRC and F1** — at this prevalence AUROC saturates near 1.0 and can't separate good models from great ones.
+> **How to read this:** fraud is ~0.10% of transactions, so a coin-flip classifier scores AUPRC ≈ 0.0010. The raw transaction columns reach ~138× that. Cortex's fraud score reaches **~974× random**. We report **AUPRC and F1** — at this prevalence AUROC saturates near 1.0 and can't separate good models from great ones.
 
 ---
 
@@ -91,15 +91,16 @@ few seconds once the data is downloaded.
 ## What It Computes
 
 The test set is the **entire** held-out split, isolated by time: train on
-1991–2017, evaluate on **2018–2020 — 2.41M transactions, ~2,700 fraud (0.11%)**
-— not a sample. Each row's fraud score is `P(fraud) = softmax(is_fraud_logits)[1]`.
+1991–2017, validate on 2018, evaluate on **2019–2020 — 2,034,720 transactions,
+2,068 fraud (0.10%)** — not a sample. Each row's fraud score is
+`P(fraud) = softmax(is_fraud_logits)[1]`.
 
 | Model | Readout | Parameters | AUPRC | F1 |
 |---|---|---:|---:|---:|
-| Raw features | 13 columns → XGBoost | — | 0.19 | 0.31 |
-| NVIDIA Transaction Foundation Model *(own split)* | embedding + raw → XGBoost | 29M | 0.18 | 0.24 |
-| PRAGMA-M | embedding + raw → XGBoost | 100M | 0.47 | 0.60 |
-| **Cortex** | **fraud score (no raw needed)** | **~8M** | **0.98** | **0.96** |
+| Raw features | 13 columns → XGBoost | — | 0.14 | 0.26 |
+| NVIDIA Transaction Foundation Model | embedding + raw → XGBoost | 29M | 0.18 | 0.23 |
+| PRAGMA-M | LoRA fine-tune | 100M | 0.83 | 0.81 |
+| **Cortex** | **fraud score (no raw needed)** | **~8M** | **0.99** | **0.96** |
 
 <sub>Every model is shown at its strongest configuration. Cortex's score is a
 standalone detector — a calibrated per-transaction probability fed straight to
@@ -144,8 +145,8 @@ scores.
 Multivariate Time Series* ([arXiv:2011.01843](https://arxiv.org/abs/2011.01843),
 [github.com/IBM/TabFormer](https://github.com/IBM/TabFormer)) — IBM's
 **synthetic** credit-card transaction dataset: 24,386,900 transactions, 2,000
-cardholders, 1991–2020, 0.11% fraud. Evaluated on a strict time-isolated 80/10/10
-split (train 1991–2017, validation 2017–2018, test 2018–2020).
+cardholders, 1991–2020, 0.10% fraud. Evaluated on a strict time-isolated split
+(train 1991–2017, validation 2018, test 2019–2020).
 
 The raw CSV is not redistributed here (IBM TabFormer terms). This benchmark uses
 only the **published per-transaction Cortex scores**
